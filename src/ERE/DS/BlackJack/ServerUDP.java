@@ -2,8 +2,9 @@ package ERE.DS.BlackJack;
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class ServerUDP {
@@ -34,8 +35,7 @@ public class ServerUDP {
         Collections.shuffle(cards);
         int aux = 0;
         int total = 0;
-        boolean stop = false;
-        while(!stop)
+        while(true)
         {
             DatagramPacket receivePacket =
                     new DatagramPacket(receiveData, receiveData.length);
@@ -56,19 +56,28 @@ public class ServerUDP {
                 card = cards.remove(cards.size() - 1);
                 total += convertToInt(card);
                 send += card + " - Total: " + total;
+                send += total > 21 ? " Estorou" : "";
             }
             else {
-                if (sentence.equals("y")) {
+                byte[] aux1 = new byte[1024];
+                aux1[0] = "s".getBytes(StandardCharsets.UTF_8)[0];
+                byte[] aux2 = sentence.getBytes(StandardCharsets.UTF_8);
+                if (Arrays.equals(aux1, aux2)) {
                     String card = cards.remove(cards.size() - 1);
                     total += convertToInt(card);
                     send = card + " - Total: " + total;
+                    send += total > 21 ? " Estorou" : "";
                 }
                 else {
+                    aux = 0;
                     send = "Total: " + total;
-                    stop = true;
+                    total = 0;
                 }
             }
-
+            if (send.contains("Estorou")) {
+                aux = 0;
+                total = 0;
+            }
             sendData = send.getBytes();
 
             DatagramPacket sendPacket =
@@ -77,11 +86,12 @@ public class ServerUDP {
 
             serverSocket.send(sendPacket);
         }
-
-        serverSocket.close();
     }
 
     private static int convertToInt(String card) {
+        if (card.equals("A")) {
+            return 1;
+        }
         return card.equals("J") || card.equals("Q") || card.equals("K") ? 10 : Integer.parseInt(card);
     }
 }
