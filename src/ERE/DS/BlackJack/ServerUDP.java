@@ -10,7 +10,9 @@ public class ServerUDP {
     static boolean[] firstHand = new boolean[2];
     static int[] players = new int[2];
     static int[] total = new int[2];
+    static boolean[] stop = new boolean[2];
     static ArrayList<String> cards = new ArrayList<>();
+
     public static void main(String args[]) throws Exception
     {
         DatagramSocket serverSocket = new DatagramSocket(9876);
@@ -55,7 +57,6 @@ public class ServerUDP {
                 send += getCard(firstPlayer) + ", " + getCard(firstPlayer) + " - Total: ";
                 int t = firstPlayer ? total[0] : total[1];
                 send += t;
-                send += t > 21 ? " Estorou" : "";
             }
             else if (port == turnPlayer){
                 if (allPlayers) {
@@ -66,22 +67,29 @@ public class ServerUDP {
                         send = getCard(firstPlayer) + " - Total: ";
                         int t = firstPlayer ? total[0] : total[1];
                         send += t;
-                        send += t > 21 ? " Estorou" : "";
                     } else {
-                        send = "Total: " + total;
-                        resetGame();
+                        int t = firstPlayer ? total[0] : total[1];
+                        send = "Total: " + t;
+                        if (firstPlayer) stop[0] = true;
+                        else stop[1] = true;
                     }
                 }
             }
-
-            if (send.contains("Estorou")) {
-                resetGame();
+            int index = firstPlayer ? 0 : 1;
+            if (total[index] > 21) {
+                stop[index] = true;
             }
 
-            if (allPlayers) {
+            if (stop[0] && stop[1]) {
+                String[] msg = getResult(total).split(",");
+                sendMsg(msg[0], serverSocket, IPAddress, players[0]);
+                sendMsg(msg[1], serverSocket, IPAddress, players[1]);
+            }
+            else if (allPlayers) {
                 if (port == turnPlayer) {
                     sendMsg(send, serverSocket, IPAddress, turnPlayer);
-                    firstPlayer = !firstPlayer;
+                    int nextIndex = firstPlayer ? 1 : 0;
+                    if (!stop[nextIndex]) firstPlayer = !firstPlayer;
                 }
                 else {
                     sendMsg("Esperando o outro jogador", serverSocket, IPAddress, port);
@@ -119,11 +127,19 @@ public class ServerUDP {
         return card.equals("J") || card.equals("Q") || card.equals("K") ? 10 : Integer.parseInt(card);
     }
 
+    private static String getResult(int[] total) {
+        if (total[0] > 21 && total[1] > 21) return "Ambos perderam,Ambos perderam";
+        else if (total[0] > total[1]) return "Você ganhou,Você perdeu";
+        else if (total[0] < total[1]) return "Você perdeu,Você ganhou";
+        else return "Empate,Empate";
+    }
+
     private static void resetGame() {
         for (int i = 0; i < 2; i++) {
             firstHand[i] = true;
             total[i] = 0;
-            players[0] = 0;
+            players[i] = 0;
+            stop[i] = false;
         }
         cards = shuffleCards();
     }
