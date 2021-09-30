@@ -4,35 +4,73 @@ import java.io.*;
 import java.net.*;
 
 public class Client {
-    public static void main(String args[]) throws Exception
-    {
+    public static void main(String args[]) throws Exception {
+        int aux = 0;
+        boolean stop = false;
+        while (!stop) {
+            BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 
-        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+            DatagramSocket clientSocket = new DatagramSocket();
 
-        DatagramSocket clientSocket = new DatagramSocket();
+            InetAddress IPAddress = InetAddress.getByName("localhost");
 
-        InetAddress IPAddress = InetAddress.getByName("localhost");
+            byte[] sendData = new byte[1024];
+            byte[] receiveData = new byte[1024];
+            if (aux == 0) {
+                aux++;
+                System.out.println("Deseja jogar (s/n)");
+                String sentence = inFromUser.readLine();
+                sendData = sentence.getBytes();
+                if (sentence.equals("n")) break;
+                else if (!sentence.equals("s")) {
+                    System.out.println("Comando desconhecido");
+                    aux--;
+                } else {
+                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
 
-        byte[] sendData = new byte[1024];
-        byte[] receiveData = new byte[1024];
+                    clientSocket.send(sendPacket);
 
-        String sentence = inFromUser.readLine();
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
-        sendData = sentence.getBytes();
+                    clientSocket.receive(receivePacket);
 
-        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
+                    String modifiedSentence = new String(receivePacket.getData());
 
-        clientSocket.send(sendPacket);
+                    System.out.println("FROM SERVER:" + modifiedSentence);
 
-        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                    clientSocket.close();
+                }
+            } else {
+                System.out.println("Desejas outra (s/n)");
+                String sentence = inFromUser.readLine();
+                sendData = sentence.getBytes();
 
-        clientSocket.receive(receivePacket);
+                if (sentence.equals("n")) stop = true;
+                else if (!sentence.equals("s")) {
+                    System.out.println("Comando desconhecido");
+                    break;
+                }
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
 
-        String modifiedSentence = new String(receivePacket.getData());
+                clientSocket.send(sendPacket);
 
-        System.out.println("FROM SERVER:" + modifiedSentence);
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
-        clientSocket.close();
+                clientSocket.receive(receivePacket);
+
+                String modifiedSentence = new String(receivePacket.getData());
+
+                System.out.println("FROM SERVER:" + modifiedSentence);
+
+                if(modifiedSentence.contains("Estorou")) {
+                    stop = true;
+                }
+
+                clientSocket.close();
+
+            }
+
+        }
 
     }
 }
