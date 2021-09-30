@@ -1,24 +1,25 @@
 package ERE.DS.BlackJack;
 
+import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
 public class ServerUDP {
-    static int aux = 0;
-    static int total = 0;
+    static boolean[] firstHand = new boolean[2];
+    static int[] players = new int[2];
+    static int[] total = new int[2];
     static ArrayList<String> cards = new ArrayList<>();
-
     public static void main(String args[]) throws Exception
     {
-
         DatagramSocket serverSocket = new DatagramSocket(9876);
 
-        byte[] receiveData = new byte[1024];
-        byte[] sendData  = new byte[1024];
+        resetGame();
 
-        cards = shuffleCards();
+        byte[] receiveData = new byte[1024];
+        boolean firstPlayer = true;
+        boolean allPlayers = false;
 
         while(true)
         {
@@ -29,43 +30,85 @@ public class ServerUDP {
             String sentence = new String(receivePacket.getData());
             System.out.println(receivePacket.getSocketAddress());
             InetAddress IPAddress = receivePacket.getAddress();
-
             int port = receivePacket.getPort();
-            String send = "";
-            if (aux == 0) {
-                aux++;
 
-                send += getCard() + ", " + getCard() + " - Total: " + total;
-                send += total > 21 ? " Estorou" : "";
+            if (players[0] == 0) {
+                players[0] = port;
             }
-            else {
-                byte[] aux1 = new byte[1024];
-                aux1[0] = "s".getBytes()[0];
-                byte[] aux2 = sentence.getBytes();
-                if (Arrays.equals(aux1, aux2)) {
-                    send = getCard() + " - Total: " + total;
-                    send += total > 21 ? " Estorou" : "";
-                }
-                else {
-                    send = "Total: " + total;
-                    resetGame();
+            else if (players[1] == 0) {
+                players[1] = port;
+                allPlayers = true;
+                System.out.println(players[0] + " " + players[1]);
+            }
+            else if (players[0] != port && players[1] != port) {
+                sendMsg("Número máximo de jogadores alcançados", serverSocket, IPAddress, port);
+            }
+
+            String send = "";
+            int turnPlayer = firstPlayer? players[0] : players[1];
+            boolean firstH = firstPlayer ? firstHand[0] : firstHand[1];
+
+            if (firstH && allPlayers && port == turnPlayer) {
+                if (firstPlayer) firstHand[0] = false;
+                else firstHand[1] = false;
+
+                send += getCard(firstPlayer) + ", " + getCard(firstPlayer) + " - Total: ";
+                int t = firstPlayer ? total[0] : total[1];
+                send += t;
+                send += t > 21 ? " Estorou" : "";
+            }
+            else if (port == turnPlayer){
+                if (allPlayers) {
+                    byte[] aux1 = new byte[1024];
+                    aux1[0] = "s".getBytes()[0];
+                    byte[] aux2 = sentence.getBytes();
+                    if (Arrays.equals(aux1, aux2)) {
+                        send = getCard(firstPlayer) + " - Total: ";
+                        int t = firstPlayer ? total[0] : total[1];
+                        send += t;
+                        send += t > 21 ? " Estorou" : "";
+                    } else {
+                        send = "Total: " + total;
+                        resetGame();
+                    }
                 }
             }
 
             if (send.contains("Estorou")) {
                 resetGame();
             }
-            sendData = send.getBytes();
 
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
-
-            serverSocket.send(sendPacket);
+            if (allPlayers) {
+                if (port == turnPlayer) {
+                    sendMsg(send, serverSocket, IPAddress, turnPlayer);
+                    firstPlayer = !firstPlayer;
+                }
+                else {
+                    sendMsg("Esperando o outro jogador", serverSocket, IPAddress, port);
+                }
+            }
+            else {
+                sendMsg("Esperando o outro jogador", serverSocket, IPAddress, port);
+            }
         }
     }
 
-    private static String getCard() {
+    private static void sendMsg(String msg, DatagramSocket serverSocket, InetAddress IPAddress, int port) throws IOException {
+
+        byte[] sendData  = new byte[1024];
+        sendData = msg.getBytes();
+
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+
+        serverSocket.send(sendPacket);
+    }
+
+    private static String getCard(boolean firstPlayer) {
         String card = cards.remove(cards.size() - 1);
-        total += convertToInt(card);
+
+        if (firstPlayer) total[0] += convertToInt(card);
+        else total[1] += convertToInt(card);
+
         return card;
     }
 
@@ -77,8 +120,11 @@ public class ServerUDP {
     }
 
     private static void resetGame() {
-        aux = 0;
-        total = 0;
+        for (int i = 0; i < 2; i++) {
+            firstHand[i] = true;
+            total[i] = 0;
+            players[0] = 0;
+        }
         cards = shuffleCards();
     }
 
