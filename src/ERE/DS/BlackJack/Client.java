@@ -67,6 +67,6 @@ public class Client {
 
         System.out.println("FROM SERVER:" + response);
 
-        return response.contains("Estorou");
+        return response.contains("Estourou");
     }
 }
