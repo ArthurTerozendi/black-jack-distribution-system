@@ -7,70 +7,66 @@ public class Client {
     public static void main(String args[]) throws Exception {
         int aux = 0;
         boolean stop = false;
+
+        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+
+        DatagramSocket clientSocket = new DatagramSocket();
+
         while (!stop) {
-            BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-
-            DatagramSocket clientSocket = new DatagramSocket();
-
-            InetAddress IPAddress = InetAddress.getByName("localhost");
-
-            byte[] sendData = new byte[1024];
-            byte[] receiveData = new byte[1024];
             if (aux == 0) {
                 aux++;
                 System.out.println("Deseja jogar (s/n)");
                 String sentence = inFromUser.readLine();
-                sendData = sentence.getBytes();
+
                 if (sentence.equals("n")) break;
                 else if (!sentence.equals("s")) {
                     System.out.println("Comando desconhecido");
                     aux--;
                 } else {
-                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
+                    sendMsg(sentence, clientSocket);
 
-                    clientSocket.send(sendPacket);
-
-                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-
-                    clientSocket.receive(receivePacket);
-
-                    String modifiedSentence = new String(receivePacket.getData());
-
-                    System.out.println("FROM SERVER:" + modifiedSentence);
-
-                    clientSocket.close();
+                    stop = receiveMsg(clientSocket);
                 }
             } else {
                 System.out.println("Desejas outra (s/n)");
                 String sentence = inFromUser.readLine();
-                sendData = sentence.getBytes();
 
                 if (sentence.equals("n")) stop = true;
                 else if (!sentence.equals("s")) {
                     System.out.println("Comando desconhecido");
                     break;
                 }
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
 
-                clientSocket.send(sendPacket);
+                sendMsg(sentence, clientSocket);
 
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-
-                clientSocket.receive(receivePacket);
-
-                String modifiedSentence = new String(receivePacket.getData());
-
-                System.out.println("FROM SERVER:" + modifiedSentence);
-
-                if(modifiedSentence.contains("Estorou")) {
-                    stop = true;
-                }
-
-                clientSocket.close();
-
+                stop = receiveMsg(clientSocket);
             }
 
         }
 
+        clientSocket.close();
+    }
+
+    private static void sendMsg(String msg, DatagramSocket clientSocket) throws IOException {
+        byte[] sendData = new byte[1024];
+        InetAddress IPAddress = InetAddress.getByName("localhost");
+        sendData = msg.getBytes();
+
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
+
+        clientSocket.send(sendPacket);
+    }
+
+    private static boolean receiveMsg(DatagramSocket clientSocket) throws IOException {
+        byte[] receiveData = new byte[1024];
+
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        clientSocket.receive(receivePacket);
+
+        String response = new String(receivePacket.getData());
+
+        System.out.println("FROM SERVER:" + response);
+
+        return response.contains("Estorou");
     }
 }
