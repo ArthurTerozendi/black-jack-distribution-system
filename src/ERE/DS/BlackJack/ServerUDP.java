@@ -76,14 +76,17 @@ public class ServerUDP {
                 }
             }
             int index = firstPlayer ? 0 : 1;
-            if (total[index] > 21) {
+            if (total[index] >= 21) {
                 stop[index] = true;
+                send = "Total - " + total[index];
+                send += total[index] > 21 ? " Estourou" : "";
             }
 
             if (stop[0] && stop[1]) {
                 String[] msg = getResult(total).split(",");
                 sendMsg(msg[0], serverSocket, IPAddress, players[0]);
                 sendMsg(msg[1], serverSocket, IPAddress, players[1]);
+                resetGame();
             }
             else if (allPlayers) {
                 if (port == turnPlayer) {
@@ -129,8 +132,8 @@ public class ServerUDP {
 
     private static String getResult(int[] total) {
         if (total[0] > 21 && total[1] > 21) return "Ambos perderam,Ambos perderam";
-        else if (total[0] > total[1]) return "Você ganhou,Você perdeu";
-        else if (total[0] < total[1]) return "Você perdeu,Você ganhou";
+        else if (total[0] > total[1] && total[0] <= 21) return "Você ganhou,Você perdeu";
+        else if (total[0] < total[1] && total[1] <= 21) return "Você perdeu,Você ganhou";
         else return "Empate,Empate";
     }
 
