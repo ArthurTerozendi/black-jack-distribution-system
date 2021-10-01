@@ -25,7 +25,7 @@ public class Client {
                 } else {
                     sendMsg(sentence, clientSocket);
 
-                    stop = receiveMsg(clientSocket);
+                    receiveMsg(clientSocket);
                 }
             } else {
                 System.out.println("Desejas outra (s/n)");
@@ -39,7 +39,7 @@ public class Client {
 
                 sendMsg(sentence, clientSocket);
 
-                stop = receiveMsg(clientSocket);
+                receiveMsg(clientSocket);
             }
 
         }
@@ -57,7 +57,7 @@ public class Client {
         clientSocket.send(sendPacket);
     }
 
-    private static boolean receiveMsg(DatagramSocket clientSocket) throws IOException {
+    private static void receiveMsg(DatagramSocket clientSocket) throws IOException {
         byte[] receiveData = new byte[1024];
 
         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -66,7 +66,5 @@ public class Client {
         String response = new String(receivePacket.getData());
 
         System.out.println("FROM SERVER:" + response);
-
-        return response.contains("Estourou");
     }
 }
