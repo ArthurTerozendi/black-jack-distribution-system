@@ -19,18 +19,17 @@ public class ServerUDP {
 
         resetGame();
 
-        byte[] receiveData = new byte[1024];
         boolean firstPlayer = true;
         boolean allPlayers = false;
 
         while(true)
         {
+            byte[] receiveData = new byte[1024];
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
             serverSocket.receive(receivePacket);
 
             String sentence = new String(receivePacket.getData());
-            System.out.println(receivePacket.getSocketAddress());
             InetAddress IPAddress = receivePacket.getAddress();
             int port = receivePacket.getPort();
 
@@ -40,7 +39,6 @@ public class ServerUDP {
             else if (players[1] == 0) {
                 players[1] = port;
                 allPlayers = true;
-                System.out.println(players[0] + " " + players[1]);
             }
             else if (players[0] != port && players[1] != port) {
                 sendMsg("Número máximo de jogadores alcançados", serverSocket, IPAddress, port);
@@ -67,6 +65,7 @@ public class ServerUDP {
                         send = getCard(firstPlayer) + " - Total: ";
                         int t = firstPlayer ? total[0] : total[1];
                         send += t;
+                        send += t > 21 ? " Estourou" : "";
                     } else {
                         int t = firstPlayer ? total[0] : total[1];
                         send = "Total: " + t;
@@ -78,8 +77,6 @@ public class ServerUDP {
             int index = firstPlayer ? 0 : 1;
             if (total[index] >= 21) {
                 stop[index] = true;
-                send = "Total - " + total[index];
-                send += total[index] > 21 ? " Estourou" : "";
             }
 
             if (stop[0] && stop[1]) {
@@ -131,10 +128,11 @@ public class ServerUDP {
     }
 
     private static String getResult(int[] total) {
-        if (total[0] > 21 && total[1] > 21) return "Ambos perderam,Ambos perderam";
-        else if (total[0] > total[1] && total[0] <= 21) return "Você ganhou,Você perdeu";
-        else if (total[0] < total[1] && total[1] <= 21) return "Você perdeu,Você ganhou";
-        else return "Empate,Empate";
+        System.out.println(total[0] + " " + total[1]);
+        if (total[0] > 21 && total[1] > 21) return "Ambos perderam - Total: " + total[0] + ",Ambos perderam - Total: " + total[1];
+        else if ((total[0] > total[1] && total[0] <= 21) || (total[0] < total[1] && total[1] > 21)) return "Você ganhou - Total: " + total[0] + ",Você perdeu - Total: " + total[1];
+        else if ((total[0] < total[1] && total[1] <= 21) || (total[1] < total[0] && total[0] > 21)) return "Você perdeu - Total: " + total[1] + ",Você ganhou - Total: " + total[0];
+        else return "Empate - Total: " + total[0] + ",Empate - Total: " + total[1];
     }
 
     private static void resetGame() {

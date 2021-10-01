@@ -6,14 +6,21 @@ import java.net.*;
 public class Client {
     public static void main(String args[]) throws Exception {
         int aux = 0;
-        boolean stop = false;
 
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 
         DatagramSocket clientSocket = new DatagramSocket();
 
-        while (!stop) {
+        while (true) {
             if (aux == 0) {
+                aux++;
+                System.out.println("Envia uma mensagem para se conectar");
+                String sentence = inFromUser.readLine();
+                sendMsg(sentence, clientSocket);
+
+                receiveMsg(clientSocket);
+            }
+            else if (aux == 1) {
                 aux++;
                 System.out.println("Deseja jogar (s/n)");
                 String sentence = inFromUser.readLine();
@@ -31,8 +38,7 @@ public class Client {
                 System.out.println("Desejas outra (s/n)");
                 String sentence = inFromUser.readLine();
 
-                if (sentence.equals("n")) stop = true;
-                else if (!sentence.equals("s")) {
+                if (!sentence.equals("s") && !sentence.equals("n")) {
                     System.out.println("Comando desconhecido");
                     break;
                 }
